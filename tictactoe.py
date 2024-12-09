@@ -64,6 +64,24 @@ class UltimateTicTacToe:
             return True
         return False
 
+    # get available moves
+    def get_available_moves(self, board):
+        available_moves = []
+        if self.last_move != (None, None):
+            for small_row in range(3):
+                for small_col in range(3):
+                    if self.board[self.last_move[0]][self.last_move[1]][small_row][small_col] == -1:
+                        available_moves.append([self.last_move[0], self.last_move[1], small_row, small_col])
+        else:
+            for large_row in range(3):
+                for large_col in range(3):
+                    if self.meta_board[large_row][large_col] == -1:
+                        for small_row in range(3):
+                            for small_col in range(3):
+                                if self.board[large_row][large_col][small_row][small_col] == -1:
+                                    available_moves.append([large_row, large_col, small_row, small_col])
+        return available_moves
+
     # Make a move for the current player.
     def make_move(self, big_row, big_col, small_row, small_col):
         if self.meta_board[big_row][big_col] != -1:
