@@ -8,6 +8,12 @@ class UltimateTicTacToe:
         self.winner = -1
         self.last_move = (None, None)
     
+    def get_state(self):
+        return self.board, self.meta_board, self.current_player, self.last_move
+    
+    def current_player(self):
+        return self.current_player
+
     # display ultimate tic tac toe board
     def display_board(self):
         def num_to_symbol(num):
@@ -65,7 +71,7 @@ class UltimateTicTacToe:
         return False
 
     # get available moves
-    def get_available_moves(self, board):
+    def get_available_moves(self):
         available_moves = []
         if self.last_move != (None, None):
             for small_row in range(3):
@@ -103,7 +109,6 @@ class UltimateTicTacToe:
         # Check if the move has won the local board
         if self.check_board(self.board[big_row][big_col], self.current_player):
             self.meta_board[big_row][big_col] = self.current_player
-            self.last_move = (None, None)
             if self.check_board(self.meta_board, self.current_player):
                 self.winner = self.current_player
 
@@ -115,13 +120,42 @@ class UltimateTicTacToe:
             print(f"Player {self.winner} has won the game!!!")
             return self.winner
         return -1
+    
+    def is_terminal(self):
+        if self.last_move != (None, None):
+            for small_row in range(3):
+                for small_col in range(3):
+                    if self.board[self.last_move[0]][self.last_move[1]][small_row][small_col] == -1:
+                        return False
+        else:
+            for large_row in range(3):
+                for large_col in range(3):
+                    if self.meta_board[large_row][large_col] == -1:
+                        for small_row in range(3):
+                            for small_col in range(3):
+                                if self.board[large_row][large_col][small_row][small_col] == -1:
+                                    return False
+        return True
+
+    def payoff(self):
+        if self.winner == 0:
+            return 1
+        elif self.winner == 1:
+            return -1
+        else:
+            return 0
 
     # for regular playing
     def input_move(self):
         valid_move = False
         while not valid_move:
             try:
-                move = input(f"Player {self.current_player} (0 for O, 1 for X), enter your move as 'big_row big_col small_row small_col': ")
+                prev_row = self.last_move[0]
+                prev_col = self.last_move[1]
+                if self.last_move == (None, None):
+                    prev_row = 'ANY'
+                    prev_col = 'ANY'
+                move = input(f"Player {self.current_player} (0 for O, 1 for X), enter your move as '{prev_row} {prev_col} small_row small_col': ")
                 move_components = move.split()
                 move_values = [int(x) for x in move_components]
                 big_row, big_col, small_row, small_col = move_values
