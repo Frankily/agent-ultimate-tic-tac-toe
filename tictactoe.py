@@ -10,6 +10,9 @@ class UltimateTicTacToe:
     
     def get_state(self):
         return self.board, self.meta_board, self.current_player, self.winner, self.last_move
+    
+    def current_player(self):
+        return self.current_player
 
     # display ultimate tic tac toe board
     def display_board(self):
