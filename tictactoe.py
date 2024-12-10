@@ -8,6 +8,9 @@ class UltimateTicTacToe:
         self.winner = -1
         self.last_move = (None, None)
     
+    def get_state(self):
+        return self.board, self.meta_board, self.current_player, self.winner, self.last_move
+
     # display ultimate tic tac toe board
     def display_board(self):
         def num_to_symbol(num):
@@ -114,6 +117,30 @@ class UltimateTicTacToe:
             print(f"Player {self.winner} has won the game!!!")
             return self.winner
         return -1
+    
+    def is_terminal(self):
+        if self.last_move != (None, None):
+            for small_row in range(3):
+                for small_col in range(3):
+                    if self.board[self.last_move[0]][self.last_move[1]][small_row][small_col] == -1:
+                        return False
+        else:
+            for large_row in range(3):
+                for large_col in range(3):
+                    if self.meta_board[large_row][large_col] == -1:
+                        for small_row in range(3):
+                            for small_col in range(3):
+                                if self.board[large_row][large_col][small_row][small_col] == -1:
+                                    return False
+        return True
+
+    def payoff(self):
+        if self.winner == 0:
+            return 1
+        elif self.winner == 1:
+            return -1
+        else:
+            return 0
 
     # for regular playing
     def input_move(self):

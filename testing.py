@@ -1,11 +1,12 @@
 import argparse
 from tictactoe import UltimateTicTacToe
 import sys
-import time
-import random
 import mcts
 import alphabeta
 import dqn
+
+class TestError(Exception):
+    pass
 
 def parse_arguments():
     # Create the parser
@@ -18,16 +19,42 @@ def parse_arguments():
     # integer argument for the number of tests, defaulting to 100
     parser.add_argument('--count', type=int, default=100, help="Number of times to test")
 
-    # time or depth limit argument
-    parser.add_argument('--limit', type=int, default=1, help="limit parameter")
+    # time or depth limit argument for each player
+    parser.add_argument('--limit1', type=int, default=1, help="limit parameter")
+    parser.add_argument('--limit2', type=int, default=1, help="limit parameter")
 
     # Parse the arguments
     args = parser.parse_args()
     
     return args
 
-class TestError(Exception):
-    pass
+def compare_policies(game, count, p1, p2):
+    p1_wins = 0
+
+    for i in range(count):
+        p1_policy = p1()
+        p2_policy = p2()
+        position = game.initial_state()
+        copy = position
+        
+        while not position.is_terminal():
+            if position.actor() == i % 2:
+                move = p1_policy(position)
+            else:
+                move = p2_policy(position)
+            position = position.successor(move)
+
+        if position.payoff() == 0:
+            p1_wins += 0.5
+            p2_wins += 0.5
+        elif (position.payoff() > 0 and i % 2 == 0) or (position.payoff() < 0 and i % 2 == 1):
+            p1_wins += 1
+    return p1_wins / games
+
+def test_game(game, count, p1_policy_fxn, p2_policy_fxn):
+    wins = compare_policies(game, count, p1_policy_fxn, p2_policy_fxn)
+
+    print("WINS: ", wins, sep="")
 
 if __name__ == '__main__':
     args = parse_arguments()
@@ -53,8 +80,9 @@ if __name__ == '__main__':
         
         test_game(game,
                   args.count,
-                  lambda: player1)
-
+                  lambda: player1(args.limit1),
+                  lambda: player2(args.limit2)
+                  )
     except TestError as err:
         print(str(err))
         sys.exit(1)
