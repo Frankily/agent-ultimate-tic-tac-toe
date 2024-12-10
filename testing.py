@@ -34,14 +34,13 @@ def compare_policies(game, count, p1, p2):
     for i in range(count):
         p1_policy = p1()
         p2_policy = p2()
-        position = game.get_state()
-        
+
         while not game.is_terminal():
-            if games.current_player() == i % 2:
-                move = p1_policy(position)
+            if game.current_player() == i % 2:
+                move = p1_policy(game.get_state())
             else:
-                move = p2_policy(position)
-            position = game.successor(move)
+                move = p2_policy(game.get_state())
+            game.make_move(move)
 
         if game.payoff() == 0:
             p1_wins += 0.5
@@ -53,7 +52,7 @@ def compare_policies(game, count, p1, p2):
 def test_game(game, count, p1_policy_fxn, p2_policy_fxn):
     wins = compare_policies(game, count, p1_policy_fxn, p2_policy_fxn)
 
-    print("WINS: ", wins, sep="")
+    print("WINS: ", wins)
 
 if __name__ == '__main__':
     args = parse_arguments()

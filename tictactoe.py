@@ -9,7 +9,7 @@ class UltimateTicTacToe:
         self.last_move = (None, None)
     
     def get_state(self):
-        return self.board, self.meta_board, self.current_player, self.winner, self.last_move
+        return self.board, self.meta_board, self.current_player, self.last_move
     
     def current_player(self):
         return self.current_player
