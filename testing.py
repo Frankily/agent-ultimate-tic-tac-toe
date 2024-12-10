@@ -3,6 +3,9 @@ from tictactoe import UltimateTicTacToe
 import sys
 import time
 import random
+import mcts
+import alphabeta
+import dqn
 
 def parse_arguments():
     # Create the parser
@@ -34,9 +37,23 @@ if __name__ == '__main__':
         if args.limit < 1:
             raise TestError("time/depth must be positive")
         game = UltimateTicTacToe()
+        if args.player1 == 'mcts':
+            player1 = mcts.mct_policy
+        elif args.player1 == 'alphabeta':
+            player1 = alphabeta.alphabeta_policy
+        else:
+            player1 = dqn.dqn_policy
+
+        if args.player2 == 'mcts':
+            player2 = mcts.mct_policy
+        elif args.player2 == 'alphabeta':
+            player2 = alphabeta.alphabeta_policy
+        else:
+            player2 = dqn.dqn_policy
+        
         test_game(game,
                   args.count,
-                  lambda: )
+                  lambda: player1)
 
     except TestError as err:
         print(str(err))

@@ -65,7 +65,7 @@ class UltimateTicTacToe:
         return False
 
     # get available moves
-    def get_available_moves(self, board):
+    def get_available_moves(self):
         available_moves = []
         if self.last_move != (None, None):
             for small_row in range(3):
@@ -103,7 +103,6 @@ class UltimateTicTacToe:
         # Check if the move has won the local board
         if self.check_board(self.board[big_row][big_col], self.current_player):
             self.meta_board[big_row][big_col] = self.current_player
-            self.last_move = (None, None)
             if self.check_board(self.meta_board, self.current_player):
                 self.winner = self.current_player
 
@@ -121,7 +120,12 @@ class UltimateTicTacToe:
         valid_move = False
         while not valid_move:
             try:
-                move = input(f"Player {self.current_player} (0 for O, 1 for X), enter your move as 'big_row big_col small_row small_col': ")
+                prev_row = self.last_move[0]
+                prev_col = self.last_move[1]
+                if self.last_move == (None, None):
+                    prev_row = 'ANY'
+                    prev_col = 'ANY'
+                move = input(f"Player {self.current_player} (0 for O, 1 for X), enter your move as '{prev_row} {prev_col} small_row small_col': ")
                 move_components = move.split()
                 move_values = [int(x) for x in move_components]
                 big_row, big_col, small_row, small_col = move_values
