@@ -65,9 +65,9 @@ def mcts_policy(time_limit, num_threads = 4):
         combined_stats = {}
         for root in roots:
             for edge in root.edges:
-                action = tuple(edge.action)  # Convert action list to tuple for dictionary key
+                action = tuple(edge.action)
                 if action not in combined_stats:
-                    combined_stats[action] = [0, 0]  # [total_reward, total_visits]
+                    combined_stats[action] = [0, 0]
                 combined_stats[action][0] += edge.child.r
                 combined_stats[action][1] += edge.child.n
 
@@ -123,7 +123,10 @@ def update(reward, path):
         node.n += 1
     for edge in path[1]:
         edge.n += 1
-    
+
+
+
+# SOME TIC TAC TOE FUNCTIONS THAT ARE BETTER IMPLEMENTED HERE
 def is_terminal(board, meta_board, next_player, last_move, winner):
     if winner != -1:
         return True
