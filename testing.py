@@ -70,6 +70,7 @@ if __name__ == '__main__':
             player1 = alphabeta.alphabeta_policy
         else:
             player1 = dqn.dqn_policy
+            args.limit1 = 0
 
         if args.player2 == 'mcts':
             player2 = mcts.mcts_policy
@@ -77,6 +78,7 @@ if __name__ == '__main__':
             player2 = alphabeta.alphabeta_policy
         else:
             player2 = dqn.dqn_policy
+            args.limit2 = 1
         
         test_game(game,
                   args.count,

@@ -28,6 +28,7 @@ class DQN:
 
         self._learning_1 = Model(encoder)
         self._learning_1.train()
+        self._loaded = 0
     
     def get_second(self):
         select = epsilon_greedy(0.1)
@@ -110,18 +111,25 @@ class DQN:
                 self._target_1.copy(self._learning_1)
                 next_xfer += transfer_interval
 
-    def save_models(self, learning_0_path, target_0_path, learning_1_path, target_1_path):
+    def save_models(self, learning_0_path, learning_1_path):
         self._learning_0.save(learning_0_path)
         self._learning_1.save(learning_1_path)
 
-    def load_models(self, learning_0_path, target_0_path, learning_1_path, target_1_path):
+    def load_models(self, learning_0_path, learning_1_path):
         self._learning_0.load(learning_0_path)
         self._learning_1.load(learning_1_path)
+        self._loaded = 1
 
-    def dqn_policy(self):
+    def dqn_policy(self, player):
+        if self._loaded == 0:
+            self.load_models('player_0.pth', 'player_1.pth')
+        if player == 0:
+            model = self._learning_0
+        else:
+            model = self._learning_1
         def choose_action(s):
             select = epsilon_greedy(0)
-            values = self._learning_1.predict([s])
+            values = model.predict([s])
             moves = get_available_moves(*s)
             move_value = []
             for move in moves:
