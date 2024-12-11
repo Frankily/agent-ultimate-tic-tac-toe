@@ -31,10 +31,11 @@ def ucb(reward, num_tries, edge_tries, total_tries, player):
 
 # Function to run MCTS on a single thread
 def run_mcts_thread(state, end_time, num_threads = 4):
+    # tree to store unique nodes
     state_tree = {}
     root = Node(state)
     state_tree[turn_tuple(state)] = root
-    
+    # expanding tree
     while time.time() < end_time:
         path = [[root],[]]
         leaf = traverse(root, path, end_time)
@@ -49,30 +50,35 @@ def run_mcts_thread(state, end_time, num_threads = 4):
     return root
 
 # mcts policy
-def mcts_policy(time_limit):
+def mcts_policy(time_limit, num_threads = 4):
     # policy function on state
     def policy(state):
-        # tree to store unique nodes
-        state_tree = {}
-        root = Node(state)
-        state_tree[turn_tuple(state)] = root
         end_time = time.time() + time_limit
-        # expanding tree
-        while time.time() < end_time:
-            path = [[root],[]]
-            leaf = traverse(root, path, end_time)
-            if time.time() > end_time: break
-            if leaf.n != 0 and not is_terminal(*leaf.state):
-                leaf = expand(leaf, state_tree, path, end_time)
-            if time.time() > end_time: break
-            reward = simulate(leaf.state, end_time)
-            if time.time() > end_time: break
-            update(reward, path)
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            future_roots = [
+                executor.submit(run_mcts_thread, state, end_time)
+                for _ in range(num_threads)
+            ]
+        roots = [future.result() for future in future_roots]
+
+        # combined stats
+        combined_stats = {}
+        for root in roots:
+            for edge in root.edges:
+                action = tuple(edge.action)  # Convert action list to tuple for dictionary key
+                if action not in combined_stats:
+                    combined_stats[action] = [0, 0]  # [total_reward, total_visits]
+                combined_stats[action][0] += edge.child.r
+                combined_stats[action][1] += edge.child.n
 
         # picks the best edge based on current reward calculations
-        player = root.state[2]
-        best_edge = max(root.edges, key = lambda e: e.child.r / e.child.n * (1 - 2 * player) if e.child.n > 0 else float('-inf'))
-        return best_edge.action
+        player = state[2]
+        best_action = max(
+            combined_stats.keys(),
+            key=lambda a: (combined_stats[a][0] / combined_stats[a][1] * (1 - 2 * player))
+            if combined_stats[a][1] > 0 else float('-inf')
+        )
+        return list(best_action)
         
     return policy
 

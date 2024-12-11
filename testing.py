@@ -20,8 +20,8 @@ def parse_arguments():
     parser.add_argument('--count', type=int, default=10, help="Number of times to test")
 
     # time or depth limit argument for each player
-    parser.add_argument('--limit1', type=int, default=1, help="limit parameter")
-    parser.add_argument('--limit2', type=int, default=1, help="limit parameter")
+    parser.add_argument('--limit1', type=float, default=1, help="limit parameter")
+    parser.add_argument('--limit2', type=float, default=1, help="limit parameter")
 
     # Parse the arguments
     args = parser.parse_args()
@@ -36,15 +36,15 @@ def compare_policies(game, count, p1, p2):
         p2_policy = p2()
         game.reset_game()
         while not game.is_terminal():
+            game.display_board()
             if game.current_player == i % 2:
                 move = p1_policy(game.get_state())
             else:
                 move = p2_policy(game.get_state())
             game.make_move(*move)
-
+        game.display_board()
         if game.payoff() == 0:
             p1_wins += 0.5
-            p2_wins += 0.5
         elif (game.payoff() > 0 and i % 2 == 0) or (game.payoff() < 0 and i % 2 == 1):
             p1_wins += 1
     return p1_wins / count
@@ -59,9 +59,9 @@ if __name__ == '__main__':
     try:
         if args.count < 1:
             raise TestError("count must be positive")
-        if args.limit1 < 1:
+        if args.limit1 < 0:
             raise TestError("time/depth must be positive")
-        if args.limit2 < 1:
+        if args.limit2 < 0:
             raise TestError("time/depth must be positive")
         game = UltimateTicTacToe()
         if args.player1 == 'mcts':
