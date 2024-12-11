@@ -12,6 +12,7 @@ class UltimateTicTacToe:
     def get_state(self):
         return [copy.deepcopy(self.board), copy.deepcopy(self.meta_board), self.current_player, self.last_move, self.winner]
 
+    
     # display ultimate tic tac toe board
     def display_board(self):
         def num_to_symbol(num):
