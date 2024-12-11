@@ -9,17 +9,17 @@ class Encoder:
         pass
     def encode(self, state):
         board, meta_board, current_player, last_move, winner = state
-        board_encoding = torch.tensor(board).view(1,-1)
-        meta_board_encoding = torch.tensor(meta_board).view(1,-1)
-        player_enc = torch.tensor(current_player).view(1, -1) 
-        last_x = torch.zeros(4).view(1,-1)
-        last_y = torch.zeros(4).view(1,-1)
+        board_encoding = torch.tensor(board).view(-1)
+        meta_board_encoding = torch.tensor(meta_board).view(-1)
+        player_enc = torch.tensor(current_player).view(-1) 
+        last_x = torch.zeros(4)
+        last_y = torch.zeros(4)
         if last_move != (None, None):
-            last_x[0, last_move[0]] = 1
-            last_y[0, last_move[1]] = 1
-        last_x[0, 3] = 1
-        last_y[0, 3] = 1
-        return torch.cat([board_encoding, meta_board_encoding, player_enc, last_x, last_y], dim = 1)
+            last_x[last_move[0]] = 1
+            last_y[last_move[1]] = 1
+        last_x[3] = 1
+        last_y[3] = 1
+        return torch.cat([board_encoding, meta_board_encoding, player_enc, last_x, last_y])
 
 class Model(nn.Module):
     def __init__(self, encoder):
@@ -56,7 +56,7 @@ class Model(nn.Module):
     
     def predict(self, inputs):
         with torch.no_grad():
-            encoded_inputs = torch.tensor([self._encoder.encode(s) for s in inputs]).to(self._device)
+            encoded_inputs = torch.stack([self._encoder.encode(s) for s in inputs]).to(self._device)
             estimates = self(encoded_inputs)
         return estimates
 
@@ -74,7 +74,7 @@ class Model(nn.Module):
         states, actions, next_states, rewards = zip(*batch)
 
         # Encode inputs and compute current Q-value estimates
-        encoded_inputs = torch.tensor([self._encoder.encode(s) for s in states]).to(self._device)
+        encoded_inputs = torch.stack([self._encoder.encode(s) for s in states]).to(self._device)
         current_q = self(encoded_inputs)
         
         target_est = target_model.predict(next_states)
@@ -100,7 +100,6 @@ class Model(nn.Module):
         expected = torch.tensor(expected, dtype=torch.float32).to(self._device)
         masks = torch.tensor(masks, dtype=torch.float32).to(self._device)
         masked_loss = torch.sum(((current_q - expected) * masks)**2.0) / len(batch)
-    
         # backpropagate
         self._opt.zero_grad()
         masked_loss.backward()
