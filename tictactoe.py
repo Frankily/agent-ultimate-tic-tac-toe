@@ -1,3 +1,4 @@
+import copy
 class UltimateTicTacToe:
     # Initialize a 3x3 list of 3x3 list to represent the boards.
     def __init__(self):
@@ -9,10 +10,7 @@ class UltimateTicTacToe:
         self.last_move = (None, None)
     
     def get_state(self):
-        return self.board, self.meta_board, self.current_player, self.last_move
-    
-    def current_player(self):
-        return self.current_player
+        return [copy.deepcopy(self.board), copy.deepcopy(self.meta_board), self.current_player, self.last_move, self.winner]
 
     # display ultimate tic tac toe board
     def display_board(self):
@@ -103,14 +101,14 @@ class UltimateTicTacToe:
         # Change turn
         self.previous_turn = (big_row, big_col, small_row, small_col)
         self.last_move = (small_row, small_col)  # Determine where the next move can be made
-        if self.meta_board[small_row][small_col] != -1:
-            self.last_move = (None, None)
 
         # Check if the move has won the local board
         if self.check_board(self.board[big_row][big_col], self.current_player):
             self.meta_board[big_row][big_col] = self.current_player
             if self.check_board(self.meta_board, self.current_player):
                 self.winner = self.current_player
+        if self.meta_board[small_row][small_col] != -1:
+            self.last_move = (None, None)
 
         # Switch players
         self.current_player = 1 - self.current_player
@@ -122,6 +120,8 @@ class UltimateTicTacToe:
         return -1
     
     def is_terminal(self):
+        if self.winner != -1:
+            return True
         if self.last_move != (None, None):
             for small_row in range(3):
                 for small_col in range(3):

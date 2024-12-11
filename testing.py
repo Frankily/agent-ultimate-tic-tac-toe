@@ -16,8 +16,8 @@ def parse_arguments():
     parser.add_argument('--player1', type=str, required=True, help="Player One")
     parser.add_argument('--player2', type=str, required=True, help="Player Two")
 
-    # integer argument for the number of tests, defaulting to 100
-    parser.add_argument('--count', type=int, default=100, help="Number of times to test")
+    # integer argument for the number of tests, defaulting to 10
+    parser.add_argument('--count', type=int, default=10, help="Number of times to test")
 
     # time or depth limit argument for each player
     parser.add_argument('--limit1', type=int, default=1, help="limit parameter")
@@ -34,13 +34,13 @@ def compare_policies(game, count, p1, p2):
     for i in range(count):
         p1_policy = p1()
         p2_policy = p2()
-
+        game.reset_game()
         while not game.is_terminal():
-            if game.current_player() == i % 2:
+            if game.current_player == i % 2:
                 move = p1_policy(game.get_state())
             else:
                 move = p2_policy(game.get_state())
-            game.make_move(move)
+            game.make_move(*move)
 
         if game.payoff() == 0:
             p1_wins += 0.5
@@ -59,18 +59,20 @@ if __name__ == '__main__':
     try:
         if args.count < 1:
             raise TestError("count must be positive")
-        if args.limit < 1:
+        if args.limit1 < 1:
+            raise TestError("time/depth must be positive")
+        if args.limit2 < 1:
             raise TestError("time/depth must be positive")
         game = UltimateTicTacToe()
         if args.player1 == 'mcts':
-            player1 = mcts.mct_policy
+            player1 = mcts.mcts_policy
         elif args.player1 == 'alphabeta':
             player1 = alphabeta.alphabeta_policy
         else:
             player1 = dqn.dqn_policy
 
         if args.player2 == 'mcts':
-            player2 = mcts.mct_policy
+            player2 = mcts.mcts_policy
         elif args.player2 == 'alphabeta':
             player2 = alphabeta.alphabeta_policy
         else:
