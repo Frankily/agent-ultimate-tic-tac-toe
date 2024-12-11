@@ -115,7 +115,7 @@ class DQN:
         action = select(move_values)
         return successor(action, *initial_state)
 
-    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.5, train_interval = 4, train_batch = 32, transfer_interval = 8192, episodes = 400000):
+    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.5, train_interval = 4, train_batch = 32, transfer_interval = 8192, episodes = 120000):
         term_count = 0
         action_count = 0
         next_train = train_interval
@@ -191,7 +191,7 @@ class DQN:
                 self._target_1.copy(self._learning_1)
                 next_xfer += transfer_interval
             
-            if term_count % 4000 == 0:
+            if term_count % 4 == 0:
                 end_time = time.time()
                 print(end_time - start_time, term_count)
 

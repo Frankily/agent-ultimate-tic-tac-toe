@@ -29,12 +29,12 @@ class Model(nn.Module):
         self.conv_layers = nn.Sequential(
             nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.Conv2d(8, 16, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(8, 12, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Flatten()
         )
-        cnn_output_size = 16 * 9 * 9
-        total_input_size = cnn_output_size + 9 + 1 + 4 + 4
+        cnn_output_size = 12 * 9 * 9
+        total_input_size = cnn_output_size + 81 + 9 + 1 + 4 + 4
         # concatenated layers
         layers = [nn.Linear(total_input_size, 512), nn.ReLU(),
                   nn.Linear(512, 256), nn.ReLU(),
@@ -50,7 +50,7 @@ class Model(nn.Module):
     def forward(self, x):
         board_enc, other_enc = torch.split(x, 81, dim = 1)
         board_out = self.conv_layers(board_enc.reshape(-1,1,9,9))
-        all_features = torch.cat([board_out, other_enc], dim = 1)
+        all_features = torch.cat([board_out, board_enc, other_enc], dim = 1)
         esimates = self.fc_layers(all_features)
         return esimates
     
