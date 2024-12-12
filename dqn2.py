@@ -1,6 +1,6 @@
 import random
 import copy
-from model import Model, Encoder
+from model_2 import Model, Encoder
 from replay import ReplayDB
 import tictactoe
 import time
@@ -229,6 +229,5 @@ if __name__ == "__main__":
     replay_0 = ReplayDB(100000)
     replay_1 = ReplayDB(100000)
     dqn = DQN(encoder)
-    dqn.load_models('player_0.pth', 'player_1.pth')
     dqn.train(replay_0, replay_1)
-    dqn.save_models('player_0_1.pth', 'player_1_1.pth')
+    dqn.save_models('play_0.pth', 'play_1.pth')

@@ -3,8 +3,8 @@ from tictactoe import UltimateTicTacToe
 import sys
 import mcts
 import alphabeta
-import dqn
-from model import Encoder
+import dqn2
+from model_2 import Encoder
 
 class TestError(Exception):
     pass
