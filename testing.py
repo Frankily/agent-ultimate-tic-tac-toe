@@ -4,6 +4,7 @@ import sys
 import mcts
 import alphabeta
 import dqn
+from model import Encoder
 
 class TestError(Exception):
     pass
@@ -64,12 +65,14 @@ if __name__ == '__main__':
         if args.limit2 < 0:
             raise TestError("time/depth must be positive")
         game = UltimateTicTacToe()
+        encoder = Encoder()
         if args.player1 == 'mcts':
             player1 = mcts.mcts_policy
         elif args.player1 == 'alphabeta':
             player1 = alphabeta.alphabeta_policy
         else:
-            player1 = dqn.dqn_policy
+            dqn1 = dqn.DQN(encoder)
+            player1 = dqn1.dqn_policy
             args.limit1 = 0
 
         if args.player2 == 'mcts':
@@ -77,7 +80,8 @@ if __name__ == '__main__':
         elif args.player2 == 'alphabeta':
             player2 = alphabeta.alphabeta_policy
         else:
-            player2 = dqn.dqn_policy
+            dqn2 = dqn.DQN(encoder)
+            player2 = dqn2.dqn_policy
             args.limit2 = 1
         
         test_game(game,
