@@ -213,7 +213,7 @@ class DQN:
             model = self._learning_1
         def choose_action(s):
             select = epsilon_greedy(0)
-            values = model.predict([s])
+            values = model.predict([s])[0]
             moves = get_available_moves(*s)
             move_values = []
             for move in moves:
