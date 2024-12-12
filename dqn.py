@@ -229,6 +229,6 @@ if __name__ == "__main__":
     replay_0 = ReplayDB(100000)
     replay_1 = ReplayDB(100000)
     dqn = DQN(encoder)
-    dqn.load_models('player_0.pth, player_1.pth')
+    dqn.load_models('player_0.pth', 'player_1.pth')
     dqn.train(replay_0, replay_1)
     dqn.save_models('player_0_1.pth', 'player_1_1.pth')
