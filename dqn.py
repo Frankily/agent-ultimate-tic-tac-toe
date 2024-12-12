@@ -115,7 +115,7 @@ class DQN:
         action = select(move_values)
         return successor(action, *initial_state)
 
-    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.5, train_interval = 4, train_batch = 32, transfer_interval = 8192, episodes = 120000):
+    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.5, train_interval = 4, train_batch = 32, transfer_interval = 8192, episodes = 40960):
         term_count = 0
         action_count = 0
         next_train = train_interval
@@ -202,6 +202,8 @@ class DQN:
     def load_models(self, learning_0_path, learning_1_path):
         self._learning_0.load(learning_0_path)
         self._learning_1.load(learning_1_path)
+        self._target_0.copy(self._learning_0)
+        self._target_1.copy(self._learning_1)
         self._loaded = 1
 
     def dqn_policy(self, player):
@@ -227,5 +229,6 @@ if __name__ == "__main__":
     replay_0 = ReplayDB(100000)
     replay_1 = ReplayDB(100000)
     dqn = DQN(encoder)
+    dqn.load_models('player_0.pth, player_1.pth')
     dqn.train(replay_0, replay_1)
-    dqn.save_models('player_0.pth', 'player_1.pth')
+    dqn.save_models('player_0_1.pth', 'player_1_1.pth')

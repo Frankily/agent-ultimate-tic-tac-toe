@@ -46,7 +46,7 @@ def compare_policies(game, count, p1, p2):
         game.display_board()
         if game.payoff() == 0:
             p1_wins += 0.5
-        elif (game.payoff() > 0 and i % 2 == 0) or (game.payoff() < 0 and i % 2 == 1):
+        elif game.payoff() > 0:
             p1_wins += 1
     return p1_wins / count
 
