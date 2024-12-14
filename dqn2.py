@@ -208,7 +208,7 @@ class DQN:
 
     def dqn_policy(self, player):
         if self._loaded == 0:
-            self.load_models('player_0_1.pth', 'player_1_1.pth')
+            self.load_models('play_0.pth', 'play_1.pth')
         if player == 0:
             model = self._learning_0
         else:

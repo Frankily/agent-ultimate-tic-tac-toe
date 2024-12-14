@@ -39,13 +39,13 @@ def compare_policies(game, count, p1, p2):
         p2_policy = p2()
         game.reset_game()
         while not game.is_terminal():
-            game.display_board()
+            # game.display_board()
             if game.current_player == i % 2:
                 move = p1_policy(game.get_state())
             else:
                 move = p2_policy(game.get_state())
             game.make_move(*move)
-        game.display_board()
+        # game.display_board()
         if game.payoff() == 0:
             p1_wins += 0.5
         elif game.payoff() > 0:
@@ -89,11 +89,11 @@ if __name__ == '__main__':
         elif args.player2 == 'dqn':
             dqn_2 = dqn.DQN(encoder1)
             player1 = dqn_2.dqn_policy
-            args.limit1 = 1
+            args.limit2 = 1
         else:
             dqn_2 = dqn2.DQN(encoder2)
             player2 = dqn_2.dqn_policy
-            args.limit1 = 1
+            args.limit2 = 1
         
         test_game(game,
                   args.count,

@@ -41,7 +41,7 @@ class Model(nn.Module):
                   nn.Linear(256, 81)]
         self.fc_layers = nn.Sequential(*layers)
 
-        self._opt = torch.optim.Adam(self.parameters())
+        self._opt = torch.optim.Adam(self.parameters(), lr=1e-4)
         self._loss_fn = torch.nn.MSELoss()
 
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
