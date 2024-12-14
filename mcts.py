@@ -52,7 +52,8 @@ def run_mcts_thread(state, end_time, num_threads = 4):
 # mcts policy
 def mcts_policy(time_limit, num_threads = 4):
     # policy function on state
-    def policy(state):
+    def policy(game):
+        state = game.get_state()
         end_time = time.time() + time_limit
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             future_roots = [

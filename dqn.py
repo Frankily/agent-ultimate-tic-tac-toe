@@ -218,7 +218,8 @@ class DQN:
             model = self._learning_0
         else:
             model = self._learning_1
-        def choose_action(s):
+        def choose_action(game):
+            s = game.get_state()
             select = epsilon_greedy(0)
             values = model.predict([s])[0]
             moves = get_available_moves(*s)
