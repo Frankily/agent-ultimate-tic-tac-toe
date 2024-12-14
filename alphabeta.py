@@ -16,11 +16,13 @@ def minimax_w_alpha_beta(state, depth, alpha, beta, maximizing_player):
         
         opp_player = 1 - player
         
-        if state.check_board(state.meta_board, player):
+        if state.check_board(state.meta_board, player): # player winning
             return math.inf, None
-        elif state.check_board(state.meta_board, opp_player):
+        elif state.check_board(state.meta_board, opp_player): # opponent winning 
             return -math.inf, None
-        else:
+        elif state.is_terminal(): # draw
+            return 0, None
+        else: # non terminal
             return evaluate_state(state, player), move
     
     if maximizing_player:
@@ -142,18 +144,24 @@ def evaluate_state(state, player):
     return score
 
 if __name__ == "__main__":
-    game = UltimateTicTacToe()
-    game.display_board()
-    player = 1
+    # game = UltimateTicTacToe()
+    # game.display_board()
+    # player = 1
     
-    while not game.is_terminal():
-        
-        if player == 1:
-            minimax_score, minimax_move = minimax_w_alpha_beta(game, 0, -math.inf, math.inf, True)
-        else: 
-            minimax_score, minimax_move = minimax_w_alpha_beta(game, 5, -math.inf, math.inf, True)
+    for i in range(100):
+        game = UltimateTicTacToe()
+        # game.display_board()
+        player = 1
+        while not game.is_terminal():
             
-        game.make_move(*minimax_move)
-        game.display_board()
-        player *= -1
+            if player == 1:
+                minimax_score, minimax_move = minimax_w_alpha_beta(game, 1, -math.inf, math.inf, True)
+            else: 
+                minimax_score, minimax_move = minimax_w_alpha_beta(game, 5, -math.inf, math.inf, True)
+                
+            game.make_move(*minimax_move)
+            # game.display_board()
+            player *= -1
+        
+        print(game.winner)
         
