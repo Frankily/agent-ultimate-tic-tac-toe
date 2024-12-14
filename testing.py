@@ -29,7 +29,7 @@ def parse_arguments():
     
     return args
 
-def compare_policies(game, count, p1, p2):
+def compare_policies(game, count, p1, p2, is_1_alpha, is_2_alpha):
     p1_wins = 0
 
     for i in range(count):
@@ -39,19 +39,25 @@ def compare_policies(game, count, p1, p2):
         while not game.is_terminal():
             # game.display_board()
             if game.current_player == i % 2:
-                move = p1_policy(game.get_state())
+                if is_1_alpha:
+                    move = p1_policy(game)
+                else:
+                    move = p1_policy(game.get_state())
             else:
-                move = p2_policy(game.get_state())
-            game.make_move(*move)
-        # game.display_board()
+                if is_2_alpha:
+                    move = p2_policy(game)
+                else:
+                    move = p2_policy(game.get_state())
+            # game.make_move(*move)
+        game.display_board()
         if game.payoff() == 0:
             p1_wins += 0.5
         elif game.payoff() > 0:
             p1_wins += 1
     return p1_wins / count
 
-def test_game(game, count, p1_policy_fxn, p2_policy_fxn):
-    wins = compare_policies(game, count, p1_policy_fxn, p2_policy_fxn)
+def test_game(game, count, p1_policy_fxn, p2_policy_fxn, is_1_alpha, is_2_alpha):
+    wins = compare_policies(game, count, p1_policy_fxn, p2_policy_fxn, is_1_alpha, is_2_alpha)
 
     print("WINS: ", wins)
 
@@ -66,10 +72,13 @@ if __name__ == '__main__':
             raise TestError("time/depth must be positive")
         game = UltimateTicTacToe()
         encoder = model.Encoder()
+        is_1_alpha = False
+        is_2_alpha = False
         if args.player1 == 'mcts':
             player1 = mcts.mcts_policy
         elif args.player1 == 'alphabeta':
             player1 = alphabeta.alphabeta_policy
+            is_1_alpha = True
         elif args.player1 == 'dqn':
             dqn_1 = dqn.DQN(encoder)
             player1 = dqn_1.dqn_policy
@@ -79,16 +88,16 @@ if __name__ == '__main__':
             player2 = mcts.mcts_policy
         elif args.player2 == 'alphabeta':
             player2 = alphabeta.alphabeta_policy
+            is_2_alpha = True
         elif args.player2 == 'dqn':
             dqn_2 = dqn.DQN(encoder)
             player1 = dqn_2.dqn_policy
             args.limit2 = 1
-        
         test_game(game,
                   args.count,
-                  lambda: player1(args.limit1),
-                  lambda: player2(args.limit2)
-                  )
+                  lambda limit = args.limit1: player1(limit),
+                  lambda limit = args.limit2: player2(limit),
+                  is_1_alpha, is_2_alpha)
     except TestError as err:
         print(str(err))
         sys.exit(1)
