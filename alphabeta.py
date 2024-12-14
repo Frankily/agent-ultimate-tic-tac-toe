@@ -3,6 +3,11 @@ import copy
 import random
 from tictactoe import UltimateTicTacToe
 
+def alphabeta_policy(depth):
+    def policy(game):
+        return minimax_w_alpha_beta(game, depth, -math.inf, math.inf, True)[1]
+    return policy
+
 def minimax_w_alpha_beta(state, depth, alpha, beta, maximizing_player):
     
     if depth == 0 or state.is_terminal():
