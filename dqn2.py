@@ -1,6 +1,6 @@
 import random
 import copy
-from model import Model, Encoder
+from model_2 import Model, Encoder
 from replay import ReplayDB
 import tictactoe
 import time
@@ -115,7 +115,7 @@ class DQN:
         action = select(move_values)
         return successor(action, *initial_state)
 
-    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.1, train_interval = 4, train_batch = 64, transfer_interval = 8192, episodes = 27000):
+    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.5, train_interval = 4, train_batch = 32, transfer_interval = 8192, episodes = 40960):
         term_count = 0
         action_count = 0
         next_train = train_interval
@@ -125,7 +125,6 @@ class DQN:
         previous_actions = [] # 1
         previous_rewards = [] # 1
         current_states = [self._game.get_state() for i in range(games_at_once)] # 0
-        num_turns = [0 for i in range(games_at_once)]
         start_time = time.time()
         while term_count < episodes:
             # person 0 takes an action
@@ -141,22 +140,20 @@ class DQN:
             new_states = [successor(action, *state) for action, state in zip(current_actions, current_states)] # 1
             terminal_0 = [is_terminal(*state) for state in new_states] # 0
             current_rewards = [(payoff(*s) if t else 0) for s, t in zip(new_states, terminal_0)] # 0
-            num_turns = [turn + 1 for turn in num_turns]
             for s, a, s2, r, t in zip(current_states, current_actions, new_states, current_rewards, terminal_0):
                 if t:
                     replay_0.add(s, a, s2, r)
             # person 1 updates 
             if previous_states != []:
-                for s, a, s1, s2, r, r1, turn in zip(previous_states, previous_actions, current_states, new_states, previous_rewards, current_rewards, num_turns):
+                for s, a, s1, s2, r, r1 in zip(previous_states, previous_actions, current_states, new_states, previous_rewards, current_rewards):
                     if not is_terminal(*s):
                         if is_terminal(*s1):
                             replay_1.add(s, a, s1, -r)
-                        elif turn > 24:
+                        else:
                             replay_1.add(s, a, s2, -r1)
             
             # person 1 acts
             new_states_2 = [self.get_second() if t else s for s, t in zip(new_states, terminal_0)]
-            num_turns = [1 if t else turn for turn, t in zip(num_turns, terminal_0)]
             values = self._learning_1.predict(new_states_2)
             moves = [get_available_moves(*state) for state in new_states_2]
             move_values = []
@@ -169,16 +166,14 @@ class DQN:
             update_states = [successor(action, *state) for action, state in zip(update_actions, new_states_2)]
             terminal_1 = [is_terminal(*state) for state in update_states]
             update_rewards = [(payoff(*s) if t else 0) for s, t in zip(update_states, terminal_1)] # 1
-            num_turns = [turn + 1 for turn in num_turns]
-            for s, a, s2, r, t, turn in zip(current_states, current_actions, update_states, update_rewards, terminal_0, num_turns):
-                if not t and turn > 24:
+            for s, a, s2, r, t in zip(current_states, current_actions, update_states, update_rewards, terminal_0):
+                if not t:
                     replay_0.add(s, a, s2, r)
             # switch back
             previous_states = new_states
             previous_actions = update_actions
             previous_rewards = update_rewards
             current_states = [self._game_initial if t else s for s, t in zip(update_states, terminal_1)]
-            num_turns = [0 if t else turn for turn, t in zip(num_turns, terminal_1)]
             term_count += sum(1 if curr_t else 0 for curr_t in terminal_0)
             action_count += games_at_once
 
@@ -213,7 +208,7 @@ class DQN:
 
     def dqn_policy(self, player):
         if self._loaded == 0:
-            self.load_models('player_0_3.pth', 'player_1_3.pth')
+            self.load_models('play_0.pth', 'play_1.pth')
         if player == 0:
             model = self._learning_0
         else:
@@ -231,9 +226,8 @@ class DQN:
 
 if __name__ == "__main__":
     encoder = Encoder()
-    replay_0 = ReplayDB(50000)
-    replay_1 = ReplayDB(50000)
+    replay_0 = ReplayDB(100000)
+    replay_1 = ReplayDB(100000)
     dqn = DQN(encoder)
-    dqn.load_models('player_0_2.pth', 'player_1_2.pth')
     dqn.train(replay_0, replay_1)
-    dqn.save_models('player_0_3.pth', 'player_1_3.pth')
+    dqn.save_models('play_0.pth', 'play_1.pth')
