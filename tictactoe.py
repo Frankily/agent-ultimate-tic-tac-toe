@@ -108,6 +108,7 @@ class UltimateTicTacToe:
             self.meta_board[big_row][big_col] = self.current_player
             if self.check_board(self.meta_board, self.current_player):
                 self.winner = self.current_player
+
         if self.meta_board[small_row][small_col] != -1:
             self.last_move = (None, None)
 
@@ -121,8 +122,10 @@ class UltimateTicTacToe:
         return -1
     
     def is_terminal(self):
+
         if self.winner != -1:
             return True
+
         if self.last_move != (None, None):
             for small_row in range(3):
                 for small_col in range(3):
