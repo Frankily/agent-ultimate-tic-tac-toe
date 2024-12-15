@@ -11,7 +11,7 @@ class Encoder:
         board, meta_board, current_player, last_move, winner = state
         board_encoding = torch.tensor(board).view(-1)
         meta_board_encoding = torch.tensor(meta_board).view(-1)
-        player_enc = torch.tensor(current_player).view(-1) 
+        player_enc = torch.tensor(current_player).view(-1)
         last_x = torch.zeros(4)
         last_y = torch.zeros(4)
         if last_move != (None, None):
@@ -41,7 +41,7 @@ class Model(nn.Module):
                   nn.Linear(256, 81)]
         self.fc_layers = nn.Sequential(*layers)
 
-        self._opt = torch.optim.Adam(self.parameters(), lr=1e-4)
+        self._opt = torch.optim.Adam(self.parameters(), lr=5e-4)
         self._loss_fn = torch.nn.MSELoss()
 
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -100,6 +100,8 @@ class Model(nn.Module):
         expected = torch.tensor(expected, dtype=torch.float32).to(self._device)
         masks = torch.tensor(masks, dtype=torch.float32).to(self._device)
         masked_loss = torch.sum(((current_q - expected) * masks)**2.0) / len(batch)
+#         with open('loss.txt', 'a') as file:
+#             file.write(f'{masked_loss}\n')
         # backpropagate
         self._opt.zero_grad()
         masked_loss.backward()
