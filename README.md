@@ -1,4 +1,4 @@
-# agent-ultimate-tic-tac-toe
+# agent-ultimate-tic-tac-toe by Frank Li and Michael Chu
 ## Research Question:
 How does performance of MCTS / minimax with alpha-beta pruning vary with resources for Ultimate Tic Tac Toe?
 
