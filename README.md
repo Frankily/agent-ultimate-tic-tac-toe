@@ -33,11 +33,11 @@ From these results, we observe a steady improvement in win rate as the minimax s
 We also conducted experiments to see how much time, measured in pruned terminal nodes, alpha-beta pruning was saving over standard minimax. We used the random agent so that the opposing player was as unpredictable as possible with respect to which branch it choose to follow. The results are shown in the table below: 
 
 Table 3: Head to head results of the random agent and the minimax agent without alpha-beta pruning at varying search depth levels. Results are over 256 games played.
-| Player 1 | Player 2 | Limit 1 | Limit 2 | Result (percent p1 wins) | Time (s) | Avg Total Terminal Nodes Searched | Avg Total Terminal Nodes Pruned by Alpha-Beta |
-|----------|----------|---------|---------|--------------------------|----------|------------------------------------|---------------------------------------------|
-| Random   | Minimax  | n/a     | 2       | 0.053                    | 206      | 4714.61                            | 4172.86                                     |
-| Random   | Minimax  | n/a     | 3       | 0.052                    | 2208     | 54836.7                            | 51441.9                                     |
-| Random   | Minimax  | n/a     | 4       | 0.050                    | 22816    | 578085                             | 568255.17                                   |
+| Player 1 | Player 2 | Depth | Result (percent p1 wins) | Time (s) | Avg Total Terminal Nodes Searched | Avg Total Terminal Nodes Pruned by Alpha-Beta |
+|----------|----------|---------|--------------------------|----------|------------------------------------|---------------------------------------------|
+| Random   | Minimax  | 2       | 0.053                    | 206      | 4714.61                            | 4172.86                                     |
+| Random   | Minimax  | 3       | 0.052                    | 2208     | 54836.7                            | 51441.9                                     |
+| Random   | Minimax  | 4       | 0.050                    | 22816    | 578085                             | 568255.17                                   |
 
 
 The results were quite staggering. It was almost impractical to run minimax for search depth levels >= 4. And at most times, alpha-beta pruning was pruning > 95% of potential terminal nodes, which almost linearly translates to the time speed-up observed between this table and Table 2.  
