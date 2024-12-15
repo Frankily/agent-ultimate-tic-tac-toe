@@ -3,10 +3,9 @@
 How does performance of MCTS / minimax with alpha-beta pruning vary with resources for Ultimate Tic Tac Toe?
 
 ## Implementation:
-We implemented the MCTS agent with UCT-2 enhancements from lecture and parallelism with multiple trees on separate CPUs, and the implementation can be found in mcts.py.
-We implemented the minimax with alpha-beta pruning agent with a heuristic based on two in a row on the local boards, the winning squares on the meta board, and two in a row on the meta board. The implementation can be found in alphabeta.py.
+We implemented the minimax with alpha-beta pruning agent with a heuristic that evaluates both the local and global game boards. The heuristic first prioritizes outcomes where the player wins or loses. For intermediate game states, the evaluation considers patterns of potential advantage, such as two-in-a-row opportunities on local boards and control over meta-board squares. Local board evaluations favor moves that create or block immediate winning chances, with rows, columns, and diagonals each contributing to the score. The implementation can be found in alphabeta.py.
 
-We tried to implement two DQN agents with a q-network for each player in an adverserial-style training pipeline. We used the DQN for QFL code as a template, but the model was changed to include convolutional layers on the local and meta board, and the training script was changed to allow training on two agents. The implementation can be found in model.py, dqn.py, and replay.py. 
+We implemented the MCTS agent with UCT-2 enhancements from lecture and parallelism with multiple trees on separate CPUs, and the implementation can be found in mcts.py.
 
 ## Testing:
 For testing, you can run the testing.py script. The player arguments are --player1 and --player2 to determine which agent out of 'mcts', 'alphabeta', and 'mcts_w_h' to run. The argument for number of games is --count. A run of 10 games will not take very long, but 100 games could take around 10 minutes. The constraints for each player are --limit1 and --limit2, which can either be depth or time. The output is the fraction of wins by player 1. The greedy agent is alphabeta with depth limit of 1. It will print out intermediate results too. An example test is shown below:
@@ -50,7 +49,7 @@ The results were quite staggering. It was almost impractical to run minimax for 
 
 ### MCTS:
 #### Table 4: Head to head results for sensitivity of greedy vs MCTS for time constraints
-| Player 1 | Player 2 | Time    | Result (percent p1 wins) | Time (s) |
+| Player 1 | Player 2 | Time per move (s)  | Result (percent p1 wins) | Time (s) |
 |----------|----------|---------|--------------------------|----------|
 | greedy   | mcts     | 0.125   | 29.67%                   | 678      |
 | greedy   | mcts     | 0.25    | 9.81%                    | 1305     |
@@ -67,20 +66,21 @@ Above are the winning percentages over 256 games with 2 CPUs for a range of sear
 
 Above are the winning percentages over 256 games with a standard search time of 0.125 for a range of CPU parallelism of the MCTS against a greedy player. The parallel CPU processes each make separate state trees and run the MCTS algorithm over the several trees. Once the search time is reached, the statistics from the trees are aggregated to determine the best next move. The increase in CPUs does not change the run time of the games, as the calculations are done in parallel. As we include more CPUs, the performance of the MCTS agent improves dramatically too. The small difference in performance betwen 1 and 2 CPUs vs 2 and 4 CPUs could reflect how MCTS may be exploring similar nodes between the trees, but with enough CPUs, the MCTS algorithm will be able to explore broadly most of the nodes in the trees adequately. 
 
-#### Table 6: Head to head results for Sensitivity of greedy vs MCTS for heuristic based traversal
-| Player 1 | Player 2 | Time    | Original Result (p1 wins) | Heuristic Result (p1 wins) | Original Time | Heuristic Time |
+### MCTS with Heuristic
+#### Table 6: Head to head results for Sensitivity of greedy vs MCTS for heuristic based traversal. Results are over 256 games played. 
+| Player 1 | Player 2 | Time per move (s)   | Original Result (p1 wins) | Heuristic Result (p1 wins) | Original Time | Heuristic Time |
 |----------|----------|---------|---------------------------|----------------------------|---------------|----------------|
 | greedy   | mcts     | 0.125   | 29.67%                    | 23.4%                      | 678           | 761            |
 | greedy   | mcts     | 0.25    | 9.81%                     | 13.1%                      | 1305          | 1401           |
 | greedy   | mcts     | 0.375   | 8.51%                     | 12.3%                      | 1868          | 2089           |
 
-
-
+This is an interesting result. It appears that initializing a node's reward with a heuristic value, the MCTS agent performs better when given less time per move. However, as the time per move increases, the MCTS agent performs worse than the original. This is most likely because as MCTS is given more time per move, the initial heuristic node value matters less and less. It is even possible that heuristic is a detriment to the exploration of the MCTS agent as the time allotted per move increases. 
 
 ### Comparison of Agents
 #### Table 7: Head to head results between the minimax with alpha-beta pruning agent and the MCTS agent. Results are over 2048 games.
-| Player 1   | Player 2 | Depth | Time Per Move (s) | Result (percent p1 wins) | Time (s) |
-|------------|----------|-------|-------------------|--------------------------|----------|
-| AlphaBeta  | MCTS     | 5     | 0.2               | 46.2%                    | 20327    |
+| Player 1   | Player 2   | Depth | Time Per Move (s) | Result (percent p1 wins) | Time (s) |
+|------------|------------|-------|-------------------|--------------------------|----------|
+| AlphaBeta  | MCTS       | 5     | 0.2               | 46.2%                    | 20327    |
+| MCTS       | AlphaBeta  | 5     | 0.2               | 57.9%                    | 19382    |
 
-Over 2048 games, it appears that the MCTS agent is slightly better than the minimax with alpha-beta pruning agent. 
+Over 2048 games, it appears that the MCTS agent is slightly better than the minimax with alpha-beta pruning agent. It could be that the MCTS agent outperforms minimax with alpha-beta pruning because it is not constrained by a heuristic evaluation function, allowing it to explore the game tree more dynamically. Additionally, MCTS focuses on probabilistically deeper exploration of critical game states, which may provide better strategic insights than the fixed-depth search of alpha-beta pruning.
