@@ -9,50 +9,64 @@ class Encoder:
         pass
     def encode(self, state):
         board, meta_board, current_player, last_move, winner = state
-        board_encoding = torch.tensor(board).view(-1)
-        meta_board_encoding = torch.tensor(meta_board).view(-1)
-        player_enc = torch.tensor(current_player).view(-1) 
-        last_x = torch.zeros(4)
-        last_y = torch.zeros(4)
+        board_encoding = (torch.tensor(board) + 1).view(-1)
+        player_enc = torch.tensor(current_player + 1).view(-1)
+        last_x = torch.zeros(3)
+        last_y = torch.zeros(3)
         if last_move != (None, None):
             last_x[last_move[0]] = 1
             last_y[last_move[1]] = 1
-        last_x[3] = 1
-        last_y[3] = 1
-        return torch.cat([board_encoding, meta_board_encoding, player_enc, last_x, last_y])
+        else:
+            for i in range(3):
+                last_x[i] = 1
+                last_y[i] = 1
+        return torch.cat([board_encoding, player_enc, last_x, last_y])
 
 class Model(nn.Module):
     def __init__(self, encoder):
         super().__init__()
         self._encoder = encoder
-        # conv layers
-        self.conv_layers = nn.Sequential(
-            nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.Conv2d(8, 12, kernel_size=3, stride=1, padding=1),
+        # Convolutional layer for each local 3x3 board
+        self.local_conv = nn.Sequential(
+            nn.Conv2d(1, 256, kernel_size=3, stride=1, padding=0),
             nn.ReLU(),
             nn.Flatten()
         )
-        cnn_output_size = 12 * 9 * 9
-        total_input_size = cnn_output_size + 81 + 9 + 1 + 4 + 4
+        # Convolutional layers for processed local boards
+        self.meta_conv = nn.Sequential(
+            nn.Conv2d(256, 768, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(),
+            nn.Flatten()
+        )
+        total_input_size = 768 + 3 + 3 + 1
         # concatenated layers
         layers = [nn.Linear(total_input_size, 512), nn.ReLU(),
                   nn.Linear(512, 256), nn.ReLU(),
                   nn.Linear(256, 81)]
         self.fc_layers = nn.Sequential(*layers)
 
-        self._opt = torch.optim.Adam(self.parameters(), lr=1e-4)
+        self._opt = torch.optim.Adam(self.parameters(), lr=7.5e-4)
         self._loss_fn = torch.nn.MSELoss()
 
         self._device = "cuda" if torch.cuda.is_available() else "cpu"
         self.to(self._device)
 
     def forward(self, x):
-        board_enc, other_enc = torch.split(x, 81, dim = 1)
-        board_out = self.conv_layers(board_enc.reshape(-1,1,9,9))
-        all_features = torch.cat([board_out, board_enc, other_enc], dim = 1)
-        esimates = self.fc_layers(all_features)
-        return esimates
+        board_enc, other_enc = torch.split(x, [81,  x.size(1) - 81], dim=1)
+        board = board_enc.view(-1, 1, 9, 9)
+        sub_board_features = []
+        batch_size = board.size(0)
+        for i in range(3):
+            for j in range(3):
+                sub_board = board[:, :, i*3:(i+1)*3, j*3:(j+1)*3]
+                processed_sub_board = self.local_conv(sub_board)
+                sub_board_features.append(processed_sub_board)
+        sub_board_features = torch.cat(sub_board_features, dim=1)
+        sub_board_features = sub_board_features.view(batch_size, 3, 3, -1).permute(0, 3, 1, 2)
+        meta_features = self.meta_conv(sub_board_features)
+        all_features = torch.cat([meta_features, other_enc], dim=1)
+        estimates = self.fc_layers(all_features)
+        return estimates
     
     def predict(self, inputs):
         with torch.no_grad():
@@ -100,6 +114,8 @@ class Model(nn.Module):
         expected = torch.tensor(expected, dtype=torch.float32).to(self._device)
         masks = torch.tensor(masks, dtype=torch.float32).to(self._device)
         masked_loss = torch.sum(((current_q - expected) * masks)**2.0) / len(batch)
+#         with open('loss.txt', 'a') as file:
+#             file.write(f'{masked_loss}\n')
         # backpropagate
         self._opt.zero_grad()
         masked_loss.backward()

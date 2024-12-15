@@ -4,6 +4,8 @@ from model import Model, Encoder
 from replay import ReplayDB
 import tictactoe
 import time
+import testing
+import alphabeta
 
 # SOME TIC TAC TOE FUNCTIONS THAT ARE BETTER IMPLEMENTED HERE
 def is_terminal(board, meta_board, next_player, last_move, winner):
@@ -115,7 +117,7 @@ class DQN:
         action = select(move_values)
         return successor(action, *initial_state)
 
-    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.1, train_interval = 4, train_batch = 64, transfer_interval = 8192, episodes = 27000):
+    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.5, train_interval = 32, train_batch = 64, transfer_interval = 8192, episodes = 102400):
         term_count = 0
         action_count = 0
         next_train = train_interval
@@ -127,6 +129,8 @@ class DQN:
         current_states = [self._game.get_state() for i in range(games_at_once)] # 0
         num_turns = [0 for i in range(games_at_once)]
         start_time = time.time()
+        last_term_count = -1
+        best_validation = 1
         while term_count < episodes:
             # person 0 takes an action
             values = self._learning_0.predict(current_states)
@@ -151,7 +155,7 @@ class DQN:
                     if not is_terminal(*s):
                         if is_terminal(*s1):
                             replay_1.add(s, a, s1, -r)
-                        elif turn > 24:
+                        else:
                             replay_1.add(s, a, s2, -r1)
             
             # person 1 acts
@@ -171,7 +175,7 @@ class DQN:
             update_rewards = [(payoff(*s) if t else 0) for s, t in zip(update_states, terminal_1)] # 1
             num_turns = [turn + 1 for turn in num_turns]
             for s, a, s2, r, t, turn in zip(current_states, current_actions, update_states, update_rewards, terminal_0, num_turns):
-                if not t and turn > 24:
+                if not t:
                     replay_0.add(s, a, s2, r)
             # switch back
             previous_states = new_states
@@ -184,9 +188,13 @@ class DQN:
 
             if action_count >= next_train and action_count > train_batch:
                 samples_0 = replay_0.sample(train_batch)
+                # with open("loss.txt", 'a') as file:
+                #     file.write(f'player 0; term count: {term_count}; loss:')
                 self._learning_0.step(samples_0, self._target_0)
                 next_train += train_interval
                 samples_1 = replay_1.sample(train_batch)
+                # with open("loss.txt", 'a') as file:
+                #     file.write(f'player 1; term count: {term_count}; loss:')
                 self._learning_1.step(samples_1, self._target_1)             
                 epsilon = max(epsilon * 0.999, 0.1)
                 select = epsilon_greedy(epsilon)
@@ -196,9 +204,25 @@ class DQN:
                 self._target_1.copy(self._learning_1)
                 next_xfer += transfer_interval
             
-            if term_count % 4 == 0:
+            if term_count % 1024 == 0 and term_count != last_term_count:
+                last_term_count = term_count
+                game = tictactoe.UltimateTicTacToe()
+                self.save_models('play_0.pth', 'play_1.pth')
+                p1 = alphabeta.alphabeta_policy(1)
+                test_encoder = Encoder()
+                test_dqn = DQN(test_encoder)
+                test_dqn.load_models('play_0.pth', 'play_1.pth')
+                p2 = test_dqn.dqn_policy(1)
+                win_rate = testing.compare_policies(game, 128, lambda: p1, lambda: p2)
+                with open('win_validate.txt', 'a') as file:
+                    file.write(f'term count: {term_count}; win rate:{win_rate}\n')
+                if win_rate < best_validation:
+                    best_validation = win_rate
+                    self._target_0.copy(self._learning_0)
+                    self._target_1.copy(self._learning_1)
+            if term_count % 64 == 0:
                 end_time = time.time()
-                print(end_time - start_time, term_count)
+                print(f'term count: {term_count}; elapsed_time: {end_time - start_time}\n')
 
     def save_models(self, learning_0_path, learning_1_path):
         self._learning_0.save(learning_0_path)
@@ -213,7 +237,7 @@ class DQN:
 
     def dqn_policy(self, player):
         if self._loaded == 0:
-            self.load_models('player_0_3.pth', 'player_1_3.pth')
+            self.load_models('play_0.pth', 'play_1.pth')
         if player == 0:
             model = self._learning_0
         else:
@@ -232,9 +256,7 @@ class DQN:
 
 if __name__ == "__main__":
     encoder = Encoder()
-    replay_0 = ReplayDB(50000)
-    replay_1 = ReplayDB(50000)
+    replay_0 = ReplayDB(100000)
+    replay_1 = ReplayDB(100000)
     dqn = DQN(encoder)
-    dqn.load_models('player_0_2.pth', 'player_1_2.pth')
     dqn.train(replay_0, replay_1)
-    dqn.save_models('player_0_3.pth', 'player_1_3.pth')

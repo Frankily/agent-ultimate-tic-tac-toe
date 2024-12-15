@@ -4,7 +4,7 @@ import random
 import copy
 import tictactoe
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Pool, cpu_count
 
 # nodes in trees
 class Node:
@@ -30,11 +30,12 @@ def ucb(reward, num_tries, edge_tries, total_tries, player):
     return (exploit if player == 0 else -exploit) + explore
 
 # Function to run MCTS on a single thread
-def run_mcts_thread(state, end_time, num_threads = 4):
+def run_mcts_worker(state, end_time):
     # tree to store unique nodes
+    new_state = copy.deepcopy(state)
     state_tree = {}
-    root = Node(state)
-    state_tree[turn_tuple(state)] = root
+    root = Node(new_state)
+    state_tree[turn_tuple(new_state)] = root
     # expanding tree
     while time.time() < end_time:
         path = [[root],[]]
@@ -50,21 +51,18 @@ def run_mcts_thread(state, end_time, num_threads = 4):
     return root
 
 # mcts policy
-def mcts_policy(time_limit, num_threads = 4):
+def mcts_policy(time_limit, num_processes = 2):
+    if num_processes is None:
+        num_processes = cpu_count()
     # policy function on state
     def policy(game):
         state = game.get_state()
         end_time = time.time() + time_limit
-        with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            future_roots = [
-                executor.submit(run_mcts_thread, state, end_time)
-                for _ in range(num_threads)
-            ]
-        roots = [future.result() for future in future_roots]
-
+        with Pool(processes = num_processes) as pool:
+            results = pool.starmap(run_mcts_worker, [(state, end_time)] * num_processes)
         # combined stats
         combined_stats = {}
-        for root in roots:
+        for root in results: # roots:
             for edge in root.edges:
                 action = tuple(edge.action)
                 if action not in combined_stats:
