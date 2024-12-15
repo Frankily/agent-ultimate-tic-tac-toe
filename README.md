@@ -41,3 +41,21 @@ Table 3: Head to head results of the random agent and the minimax agent without 
 
 
 The results were quite staggering. It was almost impractical to run minimax for search depth levels >= 4. And at most times, alpha-beta pruning was pruning > 95% of potential terminal nodes, which almost linearly translates to the time speed-up observed between this table and Table 2.  
+
+
+### MCTS:
+####  Table for Sensitivity of greedy vs MCTS for time constraints
+| Player 1 | Player 2 | Time    | Result (percent p1 wins) | Time (s) |
+|----------|----------|---------|--------------------------|----------|
+| greedy   | mcts     | 0.125   | 29.67%                   | 678      |
+| greedy   | mcts     | 0.25    | 9.81%                    | 1305     |
+| greedy   | mcts     | 0.375   | 8.51%                    | 1868     |
+Above are the winning percentages over 256 games with 2 CPUs for a range of search times of the MCTS against a greedy player. With the increase in search time for the MCTS, we see a linear increase in time taken to run the games. Also, we see a clear improvement in the agent with more search time from losing almost 30% of the time to losing less than 10% of the time between a search time of 0.125 seconds and a search time of 0.375 seconds.
+
+#### Table for Sensitivity of greedy vs MCTS for CPU constraints
+| Player 1 | Player 2 | Num CPU | Result (percent p1 wins) | Time (s) |
+|----------|----------|---------|--------------------------|----------|
+| greedy   | mcts     | 1       | 30.5%                    | 705      |
+| greedy   | mcts     | 2       | 29%                      | 678      |
+| greedy   | mcts     | 4       | 12.9%                    | 675      |
+Above are the winning percentages over 256 games with a standard search time of 0.125 for a range of CPU parallelism of the MCTS against a greedy player. The parallel CPU processes each make separate state trees and run the MCTS algorithm over the several trees. Once the search time is reached, the statistics from the trees are aggregated to determine the best next move. The increase in CPUs does not change the run time of the games, as the calculations are done in parallel. As we include more CPUs, the performance of the MCTS agent improves dramatically too. The small difference in performance betwen 1 and 2 CPUs vs 2 and 4 CPUs could reflect how MCTS may be exploring similar nodes between the trees, but with enough CPUs, the MCTS algorithm will be able to explore broadly most of the nodes in the trees adequately. 
