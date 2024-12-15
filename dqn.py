@@ -117,7 +117,7 @@ class DQN:
         action = select(move_values)
         return successor(action, *initial_state)
 
-    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.5, train_interval = 8, train_batch = 64, transfer_interval = 8192, episodes = 102400):
+    def train(self, replay_0, replay_1, games_at_once = 4, epsilon = 0.5, train_interval = 32, train_batch = 64, transfer_interval = 8192, episodes = 102400):
         term_count = 0
         action_count = 0
         next_train = train_interval
@@ -127,9 +127,10 @@ class DQN:
         previous_actions = [] # 1
         previous_rewards = [] # 1
         current_states = [self._game.get_state() for i in range(games_at_once)] # 0
-        # num_turns = [0 for i in range(games_at_once)]
+        num_turns = [0 for i in range(games_at_once)]
         start_time = time.time()
         last_term_count = -1
+        best_validation = 1
         while term_count < episodes:
             # person 0 takes an action
             values = self._learning_0.predict(current_states)
@@ -144,13 +145,13 @@ class DQN:
             new_states = [successor(action, *state) for action, state in zip(current_actions, current_states)] # 1
             terminal_0 = [is_terminal(*state) for state in new_states] # 0
             current_rewards = [(payoff(*s) if t else 0) for s, t in zip(new_states, terminal_0)] # 0
-            # num_turns = [turn + 1 for turn in num_turns]
+            num_turns = [turn + 1 for turn in num_turns]
             for s, a, s2, r, t in zip(current_states, current_actions, new_states, current_rewards, terminal_0):
                 if t:
                     replay_0.add(s, a, s2, r)
             # person 1 updates 
             if previous_states != []:
-                for s, a, s1, s2, r, r1 in zip(previous_states, previous_actions, current_states, new_states, previous_rewards, current_rewards):#, num_turns):
+                for s, a, s1, s2, r, r1, turn in zip(previous_states, previous_actions, current_states, new_states, previous_rewards, current_rewards, num_turns):
                     if not is_terminal(*s):
                         if is_terminal(*s1):
                             replay_1.add(s, a, s1, -r)
@@ -159,7 +160,7 @@ class DQN:
             
             # person 1 acts
             new_states_2 = [self.get_second() if t else s for s, t in zip(new_states, terminal_0)]
-            # num_turns = [1 if t else turn for turn, t in zip(num_turns, terminal_0)]
+            num_turns = [1 if t else turn for turn, t in zip(num_turns, terminal_0)]
             values = self._learning_1.predict(new_states_2)
             moves = [get_available_moves(*state) for state in new_states_2]
             move_values = []
@@ -172,8 +173,8 @@ class DQN:
             update_states = [successor(action, *state) for action, state in zip(update_actions, new_states_2)]
             terminal_1 = [is_terminal(*state) for state in update_states]
             update_rewards = [(payoff(*s) if t else 0) for s, t in zip(update_states, terminal_1)] # 1
-            # num_turns = [turn + 1 for turn in num_turns]
-            for s, a, s2, r, t in zip(current_states, current_actions, update_states, update_rewards, terminal_0): #, num_turns):
+            num_turns = [turn + 1 for turn in num_turns]
+            for s, a, s2, r, t, turn in zip(current_states, current_actions, update_states, update_rewards, terminal_0, num_turns):
                 if not t:
                     replay_0.add(s, a, s2, r)
             # switch back
@@ -181,7 +182,7 @@ class DQN:
             previous_actions = update_actions
             previous_rewards = update_rewards
             current_states = [self._game_initial if t else s for s, t in zip(update_states, terminal_1)]
-            # num_turns = [0 if t else turn for turn, t in zip(num_turns, terminal_1)]
+            num_turns = [0 if t else turn for turn, t in zip(num_turns, terminal_1)]
             term_count += sum(1 if curr_t else 0 for curr_t in terminal_0)
             action_count += games_at_once
 
@@ -206,12 +207,19 @@ class DQN:
             if term_count % 1024 == 0 and term_count != last_term_count:
                 last_term_count = term_count
                 game = tictactoe.UltimateTicTacToe()
-                self.save_models('player_0.pth', 'player_1.pth')
+                self.save_models('play_0.pth', 'play_1.pth')
                 p1 = alphabeta.alphabeta_policy(1)
-                p2 = self.dqn_policy(1)
+                test_encoder = Encoder()
+                test_dqn = DQN(test_encoder)
+                test_dqn.load_models('play_0.pth', 'play_1.pth')
+                p2 = test_dqn.dqn_policy(1)
                 win_rate = testing.compare_policies(game, 128, lambda: p1, lambda: p2)
-                with open('win_validation.txt', 'a') as file:
+                with open('win_validate.txt', 'a') as file:
                     file.write(f'term count: {term_count}; win rate:{win_rate}\n')
+                if win_rate < best_validation:
+                    best_validation = win_rate
+                    self._target_0.copy(self._learning_0)
+                    self._target_1.copy(self._learning_1)
             if term_count % 64 == 0:
                 end_time = time.time()
                 print(f'term count: {term_count}; elapsed_time: {end_time - start_time}\n')
@@ -225,11 +233,11 @@ class DQN:
         self._learning_1.load(learning_1_path)
         self._target_0.copy(self._learning_0)
         self._target_1.copy(self._learning_1)
-        self._loaded = 0
+        self._loaded = 1
 
     def dqn_policy(self, player):
         if self._loaded == 0:
-            self.load_models('player_0.pth', 'player_1.pth')
+            self.load_models('play_0.pth', 'play_1.pth')
         if player == 0:
             model = self._learning_0
         else:
