@@ -5,6 +5,7 @@ import mcts
 import alphabeta
 import dqn
 import model
+import dqn_w_heuristic
 
 class TestError(Exception):
     pass
@@ -77,6 +78,9 @@ if __name__ == '__main__':
             dqn_1 = dqn.DQN(encoder)
             player1 = dqn_1.dqn_policy
             args.limit1 = 0
+        elif args.player1 == 'mcts_w_heuristic':
+            player1 = mcts_w_heuristic.mcts_policy
+
 
         if args.player2 == 'mcts':
             player2 = mcts.mcts_policy
@@ -87,6 +91,9 @@ if __name__ == '__main__':
             dqn_2 = dqn.DQN(encoder)
             player2 = dqn_2.dqn_policy
             args.limit2 = 1
+        elif args.player2 == 'mcts_w_heuristic':
+            player2 = mcts_w_heuristic.mcts_policy
+        
         test_game(game,
                   args.count,
                   lambda limit = args.limit1: player1(limit),
