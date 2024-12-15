@@ -29,7 +29,7 @@ def parse_arguments():
     
     return args
 
-def compare_policies(game, count, p1, p2, is_1_alpha, is_2_alpha):
+def compare_policies(game, count, p1, p2):
     p1_wins = 0
 
     for i in range(count):
@@ -37,18 +37,12 @@ def compare_policies(game, count, p1, p2, is_1_alpha, is_2_alpha):
         p2_policy = p2()
         game.reset_game()
         while not game.is_terminal():
-            # game.display_board()
-            if game.current_player == i % 2:
-                if is_1_alpha:
-                    move = p1_policy(game)
-                else:
-                    move = p1_policy(game.get_state())
+            game.display_board()
+            if game.current_player == 0:
+                move = p1_policy(game)
             else:
-                if is_2_alpha:
-                    move = p2_policy(game)
-                else:
-                    move = p2_policy(game.get_state())
-            # game.make_move(*move)
+                move = p2_policy(game)
+            game.make_move(*move)
         game.display_board()
         if game.payoff() == 0:
             p1_wins += 0.5
@@ -56,8 +50,8 @@ def compare_policies(game, count, p1, p2, is_1_alpha, is_2_alpha):
             p1_wins += 1
     return p1_wins / count
 
-def test_game(game, count, p1_policy_fxn, p2_policy_fxn, is_1_alpha, is_2_alpha):
-    wins = compare_policies(game, count, p1_policy_fxn, p2_policy_fxn, is_1_alpha, is_2_alpha)
+def test_game(game, count, p1_policy_fxn, p2_policy_fxn):
+    wins = compare_policies(game, count, p1_policy_fxn, p2_policy_fxn)
 
     print("WINS: ", wins)
 
@@ -91,13 +85,13 @@ if __name__ == '__main__':
             is_2_alpha = True
         elif args.player2 == 'dqn':
             dqn_2 = dqn.DQN(encoder)
-            player1 = dqn_2.dqn_policy
+            player2 = dqn_2.dqn_policy
             args.limit2 = 1
         test_game(game,
                   args.count,
                   lambda limit = args.limit1: player1(limit),
                   lambda limit = args.limit2: player2(limit),
-                  is_1_alpha, is_2_alpha)
+                )
     except TestError as err:
         print(str(err))
         sys.exit(1)

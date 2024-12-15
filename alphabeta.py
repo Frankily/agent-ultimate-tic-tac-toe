@@ -5,7 +5,6 @@ from tictactoe import UltimateTicTacToe
 
 def alphabeta_policy(depth):
     def policy(game):
-        print(depth)
         return minimax_w_alpha_beta(game, depth, -math.inf, math.inf, True)[1]
     return policy
 
