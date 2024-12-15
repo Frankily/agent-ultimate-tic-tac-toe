@@ -1,6 +1,6 @@
 # agent-ultimate-tic-tac-toe
 ## Research Question:
-How does performance of MCTS / minimax with alpha-beta pruning vary with resources for Ultimate Tic Tac Toe? How does DQN perform on Ultimate Tic Tac Toe?
+How does performance of MCTS / minimax with alpha-beta pruning vary with resources for Ultimate Tic Tac Toe?
 
 ## Implementation:
 We implemented the MCTS agent with UCT-2 enhancements from lecture and parallelism with multiple trees on separate CPUs, and the implementation can be found in mcts.py.
