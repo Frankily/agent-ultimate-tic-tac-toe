@@ -4,11 +4,11 @@ import random
 import copy
 import tictactoe
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Pool, cpu_count
 
 # nodes in trees
 class Node:
-    def __init__(self, state, r=0):
+    def __init__(self, state, r=0, n = 0):
         self.state = state
         self.r = r
         self.n = 0
@@ -30,48 +30,46 @@ def ucb(reward, num_tries, edge_tries, total_tries, player):
     return (exploit if player == 0 else -exploit) + explore
 
 # Function to run MCTS on a single thread
-def run_mcts_thread(state, end_time, num_threads = 4):
+def run_mcts_worker(state, end_time):
     # tree to store unique nodes
+    new_state = copy.deepcopy(state)
     state_tree = {}
-    root = Node(state)
-    state_tree[turn_tuple(state)] = root
+    root = Node(new_state)
+    root_player = new_state[2]
+    state_tree[turn_tuple(new_state)] = root
     # expanding tree
     while time.time() < end_time:
         path = [[root],[]]
         leaf = traverse(root, path, end_time)
         if time.time() > end_time: break
         if leaf.n != 0 and not is_terminal(*leaf.state):
-            leaf = expand(leaf, state_tree, path, end_time)
+            leaf = expand(leaf, state_tree, path, end_time, root_player)
         if time.time() > end_time: break
-        reward = simulate(leaf.state, end_time)
+        reward = simulate(leaf.state, end_time, root_player)
         if time.time() > end_time: break
         update(reward, path)
     
     return root
 
 # mcts policy
-def mcts_policy(time_limit, num_threads = 4):
+def mcts_policy(time_limit, num_processes = 1):
+    if num_processes is None:
+        num_processes = cpu_count()
     # policy function on state
     def policy(game):
         state = game.get_state()
         end_time = time.time() + time_limit
-        with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            future_roots = [
-                executor.submit(run_mcts_thread, state, end_time)
-                for _ in range(num_threads)
-            ]
-        roots = [future.result() for future in future_roots]
-
+        with Pool(processes = num_processes) as pool:
+            results = pool.starmap(run_mcts_worker, [(state, end_time)] * num_processes)
         # combined stats
         combined_stats = {}
-        for root in roots:
+        for root in results: # roots:
             for edge in root.edges:
                 action = tuple(edge.action)
                 if action not in combined_stats:
                     combined_stats[action] = [0, 0]
                 combined_stats[action][0] += edge.child.r
                 combined_stats[action][1] += edge.child.n
-
         # picks the best edge based on current reward calculations
         player = state[2]
         best_action = max(
@@ -96,13 +94,13 @@ def traverse(node, path, end_time):
     return node
 
 # if leaf is expandable - GOOD
-def expand(node, tree, path, end_time):
+def expand(node, tree, path, end_time, root_player):
     if not node.edges:
         for action in get_available_moves(*node.state):
             if time.time() > end_time: return None
             next_state = successor(action, *node.state)
             if turn_tuple(next_state) not in tree:
-                tree[turn_tuple(next_state)] = Node(next_state, evaluate_state(*next_state))
+                tree[turn_tuple(next_state)] = Node(next_state, evaluate_state(*next_state, root_player), 1)
             node.edges.append(Edge(action, tree[turn_tuple(next_state)]))
     rand_edge = random.choice(node.edges)
     path[1].append(rand_edge)
@@ -110,12 +108,12 @@ def expand(node, tree, path, end_time):
     return rand_edge.child
 
 # randomly choose actions until terminal state - GOOD
-def simulate(state, end_time):
+def simulate(state, end_time, root_player):
     while not is_terminal(*state):
         if time.time() > end_time: return None
         action = random.choice(get_available_moves(*state))
         state = successor(action, *state)
-    return payoff(*state)
+    return payoff(*state, root_player)
 
 # update rewards and tries for edges and node on path - GOOD
 def update(reward, path):
@@ -178,10 +176,10 @@ def get_available_moves(board, meta_board, next_player, last_move, winner):
                                 available_moves.append([large_row, large_col, small_row, small_col])
     return available_moves
 
-def payoff(board, meta_board, next_player, last_move, winner):
-    if winner == 0:
+def payoff(board, meta_board, next_player, last_move, winner, root_player):
+    if winner == root_player:
         return 1000
-    elif winner == 1:
+    elif winner == 1 - root_player:
         return -1000
     else:
         return 0
@@ -207,10 +205,17 @@ def check_board(board, player):
         return True
     return False
 
-def evaluate_state(local_boards, meta_board, player, last_move, winner):
+def evaluate_state(local_boards, meta_board, player, last_move, winner, root_player):
     score = 0
 
-    if winner == 
+    if winner == root_player:
+        return 1000
+    elif winner == 1 - root_player:
+        return -1000
+    elif is_terminal(local_boards, meta_board, player, last_move, winner):
+        return 0
+    
+    player = root_player
     # Evaluate local boards
     for i in range(3):
         for j in range(3):
