@@ -3,8 +3,7 @@ from tictactoe import UltimateTicTacToe
 import sys
 import mcts
 import alphabeta
-import dqn
-import model
+import time
 import mcts_w_heuristic
 
 class TestError(Exception):
@@ -32,23 +31,25 @@ def parse_arguments():
 
 def compare_policies(game, count, p1, p2):
     p1_wins = 0
-
+    start_time = time.time()
     for i in range(count):
         p1_policy = p1()
         p2_policy = p2()
         game.reset_game()
         while not game.is_terminal():
-            game.display_board()
+            # game.display_board()
             if game.current_player == 0:
                 move = p1_policy(game)
             else:
                 move = p2_policy(game)
             game.make_move(*move)
-        game.display_board()
+        # game.display_board()
         if game.payoff() == 0:
             p1_wins += 0.5
         elif game.payoff() > 0:
             p1_wins += 1
+        stop_time = time.time()
+        print(f"Completed {i+1} games ({(i+1)*100 / count:.2f}%). Player 1 wins: {p1_wins * 100/ (i +1) :.2f}. Time elapsed: {stop_time - start_time:.2f}s")
     return p1_wins / count
 
 def test_game(game, count, p1_policy_fxn, p2_policy_fxn):
@@ -66,31 +67,20 @@ if __name__ == '__main__':
         if args.limit2 < 0:
             raise TestError("time/depth must be positive")
         game = UltimateTicTacToe()
-        encoder = model.Encoder()
-        is_1_alpha = False
-        is_2_alpha = False
+        
         if args.player1 == 'mcts':
             player1 = mcts.mcts_policy
         elif args.player1 == 'alphabeta':
             player1 = alphabeta.alphabeta_policy
             is_1_alpha = True
-        elif args.player1 == 'dqn':
-            dqn_1 = dqn.DQN(encoder)
-            player1 = dqn_1.dqn_policy
-            args.limit1 = 0
         elif args.player1 == 'mcts_w_h':
             player1 = mcts_w_heuristic.mcts_policy
-
 
         if args.player2 == 'mcts':
             player2 = mcts.mcts_policy
         elif args.player2 == 'alphabeta':
             player2 = alphabeta.alphabeta_policy
             is_2_alpha = True
-        elif args.player2 == 'dqn':
-            dqn_2 = dqn.DQN(encoder)
-            player2 = dqn_2.dqn_policy
-            args.limit2 = 1
         elif args.player2 == 'mcts_w_h':
             player2 = mcts_w_heuristic.mcts_policy
         

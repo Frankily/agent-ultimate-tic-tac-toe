@@ -11,23 +11,23 @@ class Node:
     def __init__(self, state, r=0, n = 0):
         self.state = state
         self.r = r
-        self.n = 0
+        self.n = n
         self.edges = []
 
 # edges in tree
 class Edge:
-    def __init__(self, action, child):
+    def __init__(self, action, child, n = 0):
         self.action = action
         self.child = child
-        self.n = 0
+        self.n = n
 
 # upper confidence bound value for either player - GOOD
-def ucb(reward, num_tries, edge_tries, total_tries, player):
+def ucb(reward, num_tries, edge_tries, total_tries, player, root_player):
     if edge_tries == 0:
         return float('inf')
     exploit = reward / num_tries if num_tries > 0 else 0
     explore = sqrt(2 * log(total_tries) / edge_tries)
-    return (exploit if player == 0 else -exploit) + explore
+    return (exploit if player == root_player else -exploit) + explore
 
 # Function to run MCTS on a single thread
 def run_mcts_worker(state, end_time):
@@ -40,19 +40,19 @@ def run_mcts_worker(state, end_time):
     # expanding tree
     while time.time() < end_time:
         path = [[root],[]]
-        leaf = traverse(root, path, end_time)
+        leaf = traverse(root, path, end_time, root_player)
         if time.time() > end_time: break
         if leaf.n != 0 and not is_terminal(*leaf.state):
             leaf = expand(leaf, state_tree, path, end_time, root_player)
         if time.time() > end_time: break
         reward = simulate(leaf.state, end_time, root_player)
         if time.time() > end_time: break
-        update(reward, path)
+        update(reward/2000, path)
     
     return root
 
 # mcts policy
-def mcts_policy(time_limit, num_processes = 1):
+def mcts_policy(time_limit, num_processes = 2):
     if num_processes is None:
         num_processes = cpu_count()
     # policy function on state
@@ -74,7 +74,7 @@ def mcts_policy(time_limit, num_processes = 1):
         player = state[2]
         best_action = max(
             combined_stats.keys(),
-            key=lambda a: (combined_stats[a][0] / combined_stats[a][1] * (1 - 2 * player))
+            key=lambda a: (combined_stats[a][0] / combined_stats[a][1])
             if combined_stats[a][1] > 0 else float('-inf')
         )
         return list(best_action)
@@ -82,12 +82,12 @@ def mcts_policy(time_limit, num_processes = 1):
     return policy
 
 # traversing tree by UCB values - GOOD
-def traverse(node, path, end_time):
+def traverse(node, path, end_time, root_player):
     while node.edges:
         if time.time() > end_time: return None
         total_tries = sum(edge.n for edge in node.edges)
         player = node.state[2]
-        best_edge = max(node.edges, key = lambda e: ucb(e.child.r, e.child.n, e.n, total_tries, player))
+        best_edge = max(node.edges, key = lambda e: ucb(e.child.r, e.child.n, e.n, total_tries, player, root_player))
         node = best_edge.child
         path[1].append(best_edge)
         path[0].append(node)
@@ -100,8 +100,11 @@ def expand(node, tree, path, end_time, root_player):
             if time.time() > end_time: return None
             next_state = successor(action, *node.state)
             if turn_tuple(next_state) not in tree:
-                tree[turn_tuple(next_state)] = Node(next_state, evaluate_state(*next_state, root_player), 1)
-            node.edges.append(Edge(action, tree[turn_tuple(next_state)]))
+                tree[turn_tuple(next_state)] = Node(next_state, evaluate_state(*next_state, root_player)/2000, 1)
+            node.edges.append(Edge(action, tree[turn_tuple(next_state)], 1))
+    total_tries = sum(edge.n for edge in node.edges)
+    player = node.state[2]
+    rand_edge = max(node.edges, key = lambda e: ucb(e.child.r, e.child.n, e.n, total_tries, player, root_player))
     rand_edge = random.choice(node.edges)
     path[1].append(rand_edge)
     path[0].append(rand_edge.child)
@@ -178,9 +181,9 @@ def get_available_moves(board, meta_board, next_player, last_move, winner):
 
 def payoff(board, meta_board, next_player, last_move, winner, root_player):
     if winner == root_player:
-        return 1000
+        return 1500
     elif winner == 1 - root_player:
-        return -1000
+        return -1500
     else:
         return 0
     
@@ -209,9 +212,9 @@ def evaluate_state(local_boards, meta_board, player, last_move, winner, root_pla
     score = 0
 
     if winner == root_player:
-        return 1000
+        return 1500
     elif winner == 1 - root_player:
-        return -1000
+        return -1500
     elif is_terminal(local_boards, meta_board, player, last_move, winner):
         return 0
     
