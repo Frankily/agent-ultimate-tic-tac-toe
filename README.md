@@ -9,7 +9,7 @@ We implemented the minimax with alpha-beta pruning agent with a heuristic based 
 We tried to implement two DQN agents with a q-network for each player in an adverserial-style training pipeline. We used the DQN for QFL code as a template, but the model was changed to include convolutional layers on the local and meta board, and the training script was changed to allow training on two agents. The implementation can be found in model.py, dqn.py, and replay.py. 
 
 ## Testing:
-For testing, you can run the testing.py script. The player arguments are --player1 and --player2 to determine which agent out of 'mcts', 'alphabeta', and 'mcts_w_h' to run. The argument for number of games is --count. A run of 10 games will not take very long, but 100 games could take around 10 minutes. The constraints for each player are --limit1 and --limit2, which can either be depth or time. The output is the fraction of wins by player 1. It will print out intermediate results too. An example test is shown below:
+For testing, you can run the testing.py script. The player arguments are --player1 and --player2 to determine which agent out of 'mcts', 'alphabeta', and 'mcts_w_h' to run. The argument for number of games is --count. A run of 10 games will not take very long, but 100 games could take around 10 minutes. The constraints for each player are --limit1 and --limit2, which can either be depth or time. The output is the fraction of wins by player 1. The greedy agent is alphabeta with depth limit of 1. It will print out intermediate results too. An example test is shown below:
 
 python3 testing.py --player1 alphabeta --player2 mcts_w_h --count 10 --limit1 5 --limit2 0.25
 
